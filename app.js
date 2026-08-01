@@ -9,7 +9,6 @@ const STORAGE_KEY = 'dailyChecklistData';
 const DEFAULT_DATA = {
   tasks: [],            // array of task objects
   priorities: [null, null, null], // top 3 priorities {text, completed, id}
-  mood: [],             // array of {date, mood}
   notes: [],            // brain dump entries; we'll store one entry with id 'brainDump'
   achievements: [],     // unlocked achievement ids
   settings: {           // general settings
@@ -505,7 +504,6 @@ function renderAll() {
   renderTasks();
   renderPriorities();
   renderProgress();
-  renderMood();
   renderEveningReview();
   renderAchievements();
   // Health UI no longer present; don't attempt to update it.
@@ -575,7 +573,6 @@ window.DailyChecklistHub = {
   savePriority,
   togglePriority,
   saveBrainDump,
-  saveMood,
   saveEveningWins: saveEveningWins,
   unlockAchievement,
   applyDarkMode,
