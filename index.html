@@ -48,11 +48,32 @@
         <!-- JS will populate task categories and tasks here -->
       </div>
 
-      <!-- Evening Review: shows tasks completed today -->
+      <!-- Brain Dump: added above Evening Review -->
+      <section id="brainDumpCard" class="card mt-8">
+        <div class="section-header">
+          <h3 class="section-label">Brain Dump</h3>
+        </div>
+        <div class="card-body">
+          <textarea id="brainDumpInput" rows="6" class="textarea" placeholder="Write your brain dump notes here..."></textarea>
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button id="saveBrainDumpBtn" class="btn small">Save Brain Dump</button>
+            <button id="clearBrainDumpBtn" class="btn small btn--muted">Clear</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Evening Review: shows tasks completed today and completed tasks -->
       <section id="eveningReviewCard" class="card mt-8">
         <div class="section-header">
           <h3 class="section-label">Evening Review — Completed Today</h3>
           <div class="controls">
+            <div id="eveningPercent" style="display:flex;align-items:center;gap:10px;margin-right:8px;">
+              <strong id="eveningPercentText">0%</strong>
+              <div style="width:120px; background:#f1f5f9; border-radius:6px; overflow:hidden; height:10px;">
+                <div id="eveningProgressFill" style="height:100%; width:0%; background: linear-gradient(90deg,#0ca789,#089b78); transition: width .35s;"></div>
+              </div>
+            </div>
+            <button id="exportEveningBtn" class="btn small">Export PDF</button>
             <button id="resetDayBtn" class="btn danger">Reset Day (Delete completed today)</button>
             <button id="clearAllBtn" class="btn danger">Clear All (Delete all tasks)</button>
           </div>
@@ -70,6 +91,8 @@
   </div>
 
   <script src="app.js"></script>
+  <!-- PDF export library (client-side). Required for Export PDF button. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
   <script>
     // small helper to prevent form submit jumps if the user presses Enter in the top input
     const globalFormText = document.getElementById('globalTaskText');
