@@ -37,7 +37,6 @@
           <option>Focus Blocks</option>
           <option>Homework/Tasks</option>
           <option>Environment Reset</option>
-          <option>Evening Review</option>
         </select>
         <input id="globalTaskText" class="small-input" type="text" placeholder="Add a task quickly..." />
         <button id="globalAddBtn" class="btn">Add Task</button>
@@ -48,6 +47,21 @@
       <div id="tasksContainer">
         <!-- JS will populate task categories and tasks here -->
       </div>
+
+      <!-- Evening Review: shows tasks completed today -->
+      <section id="eveningReviewCard" class="card mt-8">
+        <div class="section-header">
+          <h3 class="section-label">Evening Review — Completed Today</h3>
+          <div class="controls">
+            <button id="resetDayBtn" class="btn danger">Reset Day (Delete completed today)</button>
+            <button id="clearAllBtn" class="btn danger">Clear All (Delete all tasks)</button>
+          </div>
+        </div>
+        <div id="eveningReview">
+          <!-- populated by JS -->
+        </div>
+      </section>
+
     </main>
 
     <footer class="muted">
