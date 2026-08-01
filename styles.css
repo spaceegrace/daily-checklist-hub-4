@@ -1,4 +1,4 @@
-/* styles.css — extracted from index.html */
+/* styles.css — centralized stylesheet for Daily Checklist Hub */
 :root {
   --bg: #f8f9fb;
   --card: #ffffff;
@@ -10,9 +10,7 @@
 }
 
 /* Layout & base */
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   background: var(--bg);
@@ -21,10 +19,7 @@ body {
   display: flex;
   justify-content: center;
 }
-.app {
-  width: 100%;
-  max-width: var(--max-width);
-}
+.app { width: 100%; max-width: var(--max-width); }
 
 /* Header */
 header {
@@ -41,13 +36,10 @@ header h1 { margin: 0; font-size: 1.25rem; }
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
+.card.compact { padding: 8px 10px; }
 
 /* Main layout */
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 14px;
-}
+.layout { display: grid; grid-template-columns: 1fr 340px; gap: 14px; }
 .left { display:flex; flex-direction:column; gap: 12px; }
 .right { display:flex; flex-direction:column; gap: 12px; }
 section.category-section { margin-bottom: 12px; }
@@ -61,7 +53,7 @@ button.btn.small { padding:5px 8px; }
 button.btn.danger { background: var(--danger); }
 .muted { color: var(--muted); font-style:italic; }
 .priority-row { display:flex; gap:8px; align-items:center; }
-#progressWrap { display:flex; flex-direction:column; gap:8px; }
+#progressWrap { display:flex; flex-direction:column; gap:8px; width:220px; }
 .progress-bar { height:16px; background:#e6eef9; border-radius:10px; overflow:hidden; }
 #progressBarFill { height:100%; width:0%; background: linear-gradient(90deg,var(--accent), #60a5fa); transition: width .3s ease; }
 #progressLabel { font-weight:600; margin-left:6px; }
@@ -73,9 +65,16 @@ label.switch { display:flex; align-items:center; gap:8px; }
 footer { margin-top:18px; font-size:0.9rem; color:var(--muted); }
 .small-input { padding:6px; border-radius:6px; border:1px solid #e5e7eb; }
 
-@media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; }
-}
+/* Helpers moved from inline */
+#globalAddTaskForm { margin-bottom:12px; }
+.form-inline { display:flex; gap:8px; align-items:center; }
+.textarea { width:100%; padding:8px; border-radius:6px; border:1px solid #e5e7eb; }
+.timer-display { font-size:1.1rem; font-weight:600; }
+.section-label { font-weight:600; margin-bottom:6px; }
+.mt-8 { margin-top:8px; }
+.health-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
 /* dark mode simple inversion */
 .dark-mode { background: #0b1220; color:#e6eef8; }
