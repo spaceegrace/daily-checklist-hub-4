@@ -414,3 +414,6 @@ function exportEveningReviewPdf() {
     w.print();
   }
 }
+
+   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeInit); else safeInit();
+      window.DailyChecklistHub = { state, addTask, editTask, deleteTask, toggleTaskCompletion, computeProgress, renderAll };
