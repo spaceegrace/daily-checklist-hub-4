@@ -80,8 +80,7 @@ const CATEGORIES = [
   'Top 3 Priorities',
   'Focus Blocks',
   'Homework/Tasks',
-  'Environment Reset',
-  'Evening Review'
+  'Environment Reset'
 ];
 
 function addTask(category, text) {
@@ -234,7 +233,64 @@ function startInlineEdit(task, taskListItem) {
 }
 
 /* =========================
+   Evening Review & Actions
+   ========================= */
+
+function renderEveningReview() {
+  const wrap = el('#eveningReview');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const today = formatDateISO();
+  const completedToday = state.tasks.filter(t => t.completed && t.completionDate === today);
+
+  if (completedToday.length === 0) {
+    const p = createEl('p', { text: 'No tasks were completed today.', className: 'muted' });
+    wrap.appendChild(p);
+    return;
+  }
+
+  const list = createEl('ul', { className: 'task-list', attrs: { role: 'list' } });
+  completedToday.forEach(task => {
+    const li = createEl('li', { className: 'task-item completed', attrs: { 'data-id': task.id } });
+    const text = createEl('span', { text: `${task.text} — ${task.category || 'Misc'}`, className: 'task-text' });
+    li.appendChild(text);
+    const meta = createEl('div', { className: 'task-meta' });
+    meta.appendChild(createEl('small', { text: `Completed: ${task.completionDate}` }));
+    li.appendChild(meta);
+
+    const actions = createEl('div', { className: 'task-actions' });
+    const delBtn = createEl('button', { text: 'Delete', className: 'btn tiny danger' });
+    delBtn.addEventListener('click', () => { if (confirm('Delete this completed task?')) deleteTask(task.id); });
+    actions.appendChild(delBtn);
+    li.appendChild(actions);
+
+    list.appendChild(li);
+  });
+
+  wrap.appendChild(list);
+}
+
+function deleteCompletedToday() {
+  const today = formatDateISO();
+  const completedToday = state.tasks.filter(t => t.completed && t.completionDate === today);
+  if (completedToday.length === 0) { alert('There are no completed tasks for today.'); return; }
+  if (!confirm(`Reset Day will DELETE ${completedToday.length} task(s) completed today. This cannot be undone. Proceed?`)) return;
+  state.tasks = state.tasks.filter(t => !(t.completed && t.completionDate === today));
+  saveData();
+  renderAll();
+}
+
+function clearAllTasks() {
+  if (state.tasks.length === 0) { alert('No tasks to clear.'); return; }
+  if (!confirm(`Clear All will permanently DELETE ALL (${state.tasks.length}) tasks. This cannot be undone. Proceed?`)) return;
+  state.tasks = [];
+  saveData();
+  renderAll();
+}
+
+/* =========================
    Daily Reset Logic
+   (kept as-is — scheduled daily reset)
    ========================= */
 
 function resetDailyIfNeeded() {
@@ -288,13 +344,17 @@ function animateProgress(toPercent) {
   progressAnimationFrame = requestAnimationFrame(tick);
 }
 
-function renderProgress() { const { total, completed, percent } = computeProgress(); const countEl = el('#progressCount'); if (countEl) countEl.textContent = `${completed}/${total} tasks complete`; animateProgress(percent); }
+function renderProgress() {
+  const { total, completed, percent } = computeProgress();
+  const countEl = el('#progressCount'); if (countEl) countEl.textContent = `${completed}/${total} tasks complete`;
+  animateProgress(percent);
+}
 
 /* Lightweight no-ops for removed features */
 function evaluateAchievements() { /* removed: tasks-only view */ }
 function evaluateStreaks() { /* removed: tasks-only view */ }
 
-function renderAll() { renderTasks(); renderProgress(); }
+function renderAll() { renderTasks(); renderProgress(); renderEveningReview(); }
 
 function initEventBindings() {
   const addForm = el('#globalAddTaskForm');
@@ -308,6 +368,10 @@ function initEventBindings() {
       });
     }
   }
+
+  const resetBtn = el('#resetDayBtn'); if (resetBtn) resetBtn.addEventListener('click', deleteCompletedToday);
+  const clearBtn = el('#clearAllBtn'); if (clearBtn) clearBtn.addEventListener('click', clearAllTasks);
+
   document.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const active = document.activeElement; if (active && active.tagName === 'BUTTON') active.click(); } });
 }
 
@@ -337,4 +401,4 @@ function safeInit() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeInit); else safeInit();
 
-window.DailyChecklistHub = { state, addTask, editTask, deleteTask, toggleTaskCompletion, computeProgress, renderAll };
+window.DailyChecklistHub = { state, addTask, editTask, deleteTask, toggleTaskCompletion, computeProgress, renderAll, deleteCompletedToday, clearAllTasks };
