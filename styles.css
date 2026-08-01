@@ -72,8 +72,21 @@ footer { margin-top:18px; font-size:0.9rem; color:var(--muted); }
 .timer-display { font-size:1.1rem; font-weight:600; }
 .section-label { font-weight:600; margin-bottom:6px; }
 .mt-8 { margin-top:8px; }
-.health-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
 
+/* Completed tasks styling */
+.task-item.completed { opacity: 0.8; text-decoration: line-through; color: #6b7280; }
+.completed-section { margin-top: 8px; }
+.completed-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e6eef9;
+}
+.completed-list .task-item { background: rgba(240,244,255,0.6); }
+
+/* Small screen */
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
 /* dark mode simple inversion */
