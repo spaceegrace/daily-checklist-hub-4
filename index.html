@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Daily Checklist Hub</title>
+  <title>Daily Checklist Hub — Tasks Only</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -44,66 +44,17 @@
       </div>
     </div>
 
-    <div class="layout">
-      <main class="left">
-        <div id="tasksContainer" class="card">
-          <!-- JS will populate task categories and tasks here -->
-        </div>
-
-        <div class="card" id="prioritiesContainer">
-          <!-- Top 3 priorities UI inserted by JS -->
-        </div>
-
-        <section class="card" id="eveningReviewContainer">
-          <!-- Evening review content rendered by JS -->
-        </section>
-
-        <section class="card">
-          <h3>Brain Dump</h3>
-          <textarea id="brainDumpTextarea" rows="6" class="textarea"></textarea>
-          <div class="controls">
-            <button id="brainDumpSave" class="btn">Save Notes</button>
-            <button id="brainDumpClear" class="btn tiny">Clear</button>
-          </div>
-        </section>
-      </main>
-
-      <aside class="right">
-        <div class="card">
-          <h3>Activation (5 min)</h3>
-          <div id="activationTimerDisplay" class="timer-display">05:00</div>
-          <div class="controls">
-            <button id="activationStart" class="btn small">Start</button>
-            <button id="activationPause" class="btn small">Pause</button>
-            <button id="activationReset" class="btn small">Reset</button>
-          </div>
-          <div id="activationMessage" class="muted mt-8"></div>
-        </div>
-
-        <div class="card">
-          <h3>Focus Timer</h3>
-          <div id="focusModeLabel" class="section-label">Focus</div>
-          <div id="focusTimerDisplay" class="timer-display">45:00</div>
-          <div class="controls">
-            <button id="focusStart" class="btn small">Start</button>
-            <button id="focusPause" class="btn small">Pause</button>
-            <button id="focusReset" class="btn small">Reset</button>
-          </div>
-        </div>
-
-
-        <div class="card" id="achievementsContainer">
-          <!-- Achievements rendered by JS -->
-        </div>
-      </aside>
-    </div>
+    <main class="card" style="margin-top:12px;">
+      <div id="tasksContainer">
+        <!-- JS will populate task categories and tasks here -->
+      </div>
+    </main>
 
     <footer class="muted">
-      Built with your app.js — elements above match the expected IDs. Add CSS/markup tweaks as needed.
+      Focused view: tasks + completed section. Extra widgets removed for clarity.
     </footer>
   </div>
 
-  <!-- Link to the app script you provided. Adjust path if needed. -->
   <script src="app.js"></script>
   <script>
     // small helper to prevent form submit jumps if the user presses Enter in the top input
@@ -123,6 +74,16 @@
     if (darkToggle) {
       darkToggle.addEventListener('change', (e) => {
         document.body.classList.toggle('dark-mode', e.target.checked);
+        try {
+          const raw = localStorage.getItem('dailyChecklistData');
+          const state = raw ? JSON.parse(raw) : null;
+          if (state && state.settings) {
+            state.settings.darkMode = e.target.checked;
+            localStorage.setItem('dailyChecklistData', JSON.stringify(state));
+          }
+        } catch (err) {
+          // ignore
+        }
       });
     }
   </script>
