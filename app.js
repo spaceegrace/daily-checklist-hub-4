@@ -1,8 +1,8 @@
 *** Begin Patch
 *** Update File: app.js
-@@
+
  function exportEveningReviewPdf() {
-@@
+
  }
 +
 +// Build a simple day summary HTML element for export
