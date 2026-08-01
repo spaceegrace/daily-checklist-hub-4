@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Daily Checklist Hub</title>
+  <style>
+    :root {
+      --bg: #f8f9fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --max-width: 1100px;
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: #111827;
+      padding: 18px;
+      display: flex;
+      justify-content: center;
+    }
+    .app {
+      width: 100%;
+      max-width: var(--max-width);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    .row { display:flex; gap: 12px; align-items:center; flex-wrap:wrap; }
+    .card {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 14px;
+    }
+    .left { display:flex; flex-direction:column; gap: 12px; }
+    .right { display:flex; flex-direction:column; gap: 12px; }
+    section.category-section { margin-bottom: 12px; }
+    .task-list { list-style: none; padding: 0; margin: 8px 0; }
+    .task-item { display:flex; gap:8px; align-items:center; padding:8px 6px; border-bottom:1px solid #f1f5f9; }
+    .task-meta { margin-left:auto; display:flex; flex-direction:column; font-size: 0.8rem; color:var(--muted); }
+    .task-actions { display:flex; gap:6px; margin-left:8px; }
+    button.btn { background:var(--accent); color:#fff; border: none; padding:6px 10px; border-radius:6px; cursor:pointer; }
+    button.btn.tiny { padding:4px 8px; font-size:0.85rem; }
+    button.btn.small { padding:5px 8px; }
+    button.btn.danger { background: var(--danger); }
+    .muted { color: var(--muted); font-style:italic; }
+    .priority-row { display:flex; gap:8px; align-items:center; }
+    #progressWrap { display:flex; flex-direction:column; gap:8px; }
+    .progress-bar { height:16px; background:#e6eef9; border-radius:10px; overflow:hidden; }
+    #progressBarFill { height:100%; width:0%; background: linear-gradient(90deg,var(--accent), #60a5fa); transition: width .3s ease; }
+    #progressLabel { font-weight:600; margin-left:6px; }
+    .achievements-list { display:flex; gap:8px; flex-wrap:wrap; }
+    .achievement { padding:8px; border-radius:8px; min-width:120px; text-align:center; background:#f3f4f6; }
+    .achievement.unlocked { background: linear-gradient(90deg,#fef3c7,#bbf7d0); box-shadow:0 1px 6px rgba(0,0,0,0.06); }
+    .controls { display:flex; gap:6px; align-items:center; margin-top:6px; }
+    label.switch { display:flex; align-items:center; gap:8px; }
+    footer { margin-top:18px; font-size:0.9rem; color:var(--muted); }
+    .small-input { padding:6px; border-radius:6px; border:1px solid #e5e7eb; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    /* dark mode simple inversion */
+    .dark-mode { background: #0b1220; color:#e6eef8; }
+    .dark-mode .card { background: #071021; box-shadow: none; border: 1px solid rgba(255,255,255,0.03); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Daily Checklist Hub</h1>
+        <div class="muted">Stay focused — plan, track, and reflect.</div>
+      </div>
+      <div class="row">
+        <label class="switch">
+          <input id="darkModeToggle" type="checkbox" />
+          <span>Dark</span>
+        </label>
+        <div class="card" style="padding:8px 10px;">
+          <div id="progressCount">0/0 tasks complete</div>
+          <div id="progressWrap" style="width:220px;">
+            <div class="progress-bar"><div id="progressBarFill"></div></div>
+            <div id="progressLabel">0%</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global add form -->
+    <div id="globalAddTaskForm" class="card" style="margin-bottom:12px;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select id="globalCategory" class="small-input">
+          <option>Morning Routine</option>
+          <option>Top 3 Priorities</option>
+          <option>Focus Blocks</option>
+          <option>Homework/Tasks</option>
+          <option>Environment Reset</option>
+          <option>Health</option>
+          <option>Evening Review</option>
+        </select>
+        <input id="globalTaskText" class="small-input" type="text" placeholder="Add a task quickly..." />
+        <button id="globalAddBtn" class="btn">Add Task</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <main class="left">
+        <div id="tasksContainer" class="card">
+          <!-- JS will populate task categories and tasks here -->
+        </div>
+
+        <div class="card" id="prioritiesContainer">
+          <!-- Top 3 priorities UI inserted by JS -->
+        </div>
+
+        <section class="card" id="eveningReviewContainer">
+          <!-- Evening review content rendered by JS -->
+        </section>
+
+        <section class="card">
+          <h3>Brain Dump</h3>
+          <textarea id="brainDumpTextarea" rows="6" style="width:100%; padding:8px; border-radius:6px; border:1px solid #e5e7eb;"></textarea>
+          <div class="controls">
+            <button id="brainDumpSave" class="btn">Save Notes</button>
+            <button id="brainDumpClear" class="btn tiny">Clear</button>
+          </div>
+        </section>
+      </main>
+
+      <aside class="right">
+        <div class="card">
+          <h3>Activation (5 min)</h3>
+          <div style="font-size:1.1rem; font-weight:600;" id="activationTimerDisplay">05:00</div>
+          <div class="controls">
+            <button id="activationStart" class="btn small">Start</button>
+            <button id="activationPause" class="btn small">Pause</button>
+            <button id="activationReset" class="btn small">Reset</button>
+          </div>
+          <div id="activationMessage" class="muted" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="card">
+          <h3>Focus Timer</h3>
+          <div id="focusModeLabel" style="font-weight:600; margin-bottom:6px;">Focus</div>
+          <div id="focusTimerDisplay" style="font-size:1.1rem; font-weight:600;">45:00</div>
+          <div class="controls">
+            <button id="focusStart" class="btn small">Start</button>
+            <button id="focusPause" class="btn small">Pause</button>
+            <button id="focusReset" class="btn small">Reset</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Mood</h3>
+          <div id="moodContainer"></div>
+        </div>
+
+        <div class="card">
+          <h3>Health</h3>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <div>Water: <strong id="waterCount">0</strong></div>
+            <button id="waterAdd" class="btn tiny">+1</button>
+            <button id="waterReset" class="btn tiny">Reset</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <label><input id="exerciseChk" type="checkbox" /> Exercise</label>
+            <label><input id="medsChk" type="checkbox" /> Medication</label>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <input id="bloodSugarInput" class="small-input" placeholder="Blood sugar" />
+            <button id="saveHealthBtn" class="btn tiny">Save</button>
+          </div>
+        </div>
+
+        <div class="card" id="achievementsContainer">
+          <!-- Achievements rendered by JS -->
+        </div>
+      </aside>
+    </div>
+
+    <footer class="muted">
+      Built with your app.js — elements above match the expected IDs. Add CSS/markup tweaks as needed.
+    </footer>
+  </div>
+
+  <!-- Link to the app script you provided. Adjust path if needed. -->
+  <script src="app.js"></script>
+  <script>
+    // small helper to prevent form submit jumps if the user presses Enter in the top input
+    const globalFormText = document.getElementById('globalTaskText');
+    if (globalFormText) {
+      globalFormText.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const btn = document.getElementById('globalAddBtn');
+          if (btn) btn.click();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
