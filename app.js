@@ -11,7 +11,9 @@ const DEFAULT_DATA = {
   settings: { darkMode: false },
   stats: { totalTasksEverCompleted: 0 },
   timers: { focusSessionsCompletedToday: 0 },
-  meta: { lastResetDate: null }
+  meta: { lastResetDate: null },
+  // persisted brain dump notes
+  brainDump: ''
 };
 
 // Utility: safe localStorage getter
@@ -242,154 +244,95 @@ function renderEveningReview() {
   wrap.innerHTML = '';
   const today = formatDateISO();
   const completedToday = state.tasks.filter(t => t.completed && t.completionDate === today);
+  const allCompleted = state.tasks.filter(t => t.completed);
+
+  // percent for today (rounded, same logic as computeProgress)
+  const todaysTasks = state.tasks.filter(t => t.dateCreated === today);
+  const total = todaysTasks.length;
+  const completedCount = todaysTasks.filter(t => t.completed).length;
+  const pct = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+  const pctTextEl = el('#eveningPercentText');
+  const pctFill = el('#eveningProgressFill');
+  if (pctTextEl) pctTextEl.textContent = pct + '%';
+  if (pctFill) pctFill.style.width = pct + '%';
 
   if (completedToday.length === 0) {
     const p = createEl('p', { text: 'No tasks were completed today.', className: 'muted' });
     wrap.appendChild(p);
-    return;
+  } else {
+    wrap.appendChild(createEl('h4', { text: `Completed Today (${completedToday.length})` }));
+    const list = createEl('ul', { className: 'task-list', attrs: { role: 'list' } });
+    completedToday.forEach(task => {
+      const li = createEl('li', { className: 'task-item completed', attrs: { 'data-id': task.id } });
+      li.appendChild(createEl('span', { text: `${task.text} — ${task.category || 'Misc'}`, className: 'task-text' }));
+      const meta = createEl('div', { className: 'task-meta' });
+      meta.appendChild(createEl('small', { text: `Completed: ${task.completionDate}` }));
+      li.appendChild(meta);
+      const actions = createEl('div', { className: 'task-actions' });
+      const delBtn = createEl('button', { text: 'Delete', className: 'btn tiny danger' });
+      delBtn.addEventListener('click', () => { if (confirm('Delete this completed task?')) deleteTask(task.id); });
+      actions.appendChild(delBtn);
+      li.appendChild(actions);
+      list.appendChild(li);
+    });
+    wrap.appendChild(list);
   }
 
-  const list = createEl('ul', { className: 'task-list', attrs: { role: 'list' } });
-  completedToday.forEach(task => {
-    const li = createEl('li', { className: 'task-item completed', attrs: { 'data-id': task.id } });
-    const text = createEl('span', { text: `${task.text} — ${task.category || 'Misc'}`, className: 'task-text' });
-    li.appendChild(text);
-    const meta = createEl('div', { className: 'task-meta' });
-    meta.appendChild(createEl('small', { text: `Completed: ${task.completionDate}` }));
-    li.appendChild(meta);
-
-    const actions = createEl('div', { className: 'task-actions' });
-    const delBtn = createEl('button', { text: 'Delete', className: 'btn tiny danger' });
-    delBtn.addEventListener('click', () => { if (confirm('Delete this completed task?')) deleteTask(task.id); });
-    actions.appendChild(delBtn);
-    li.appendChild(actions);
-
-    list.appendChild(li);
-  });
-
-  wrap.appendChild(list);
-}
-
-function deleteCompletedToday() {
-  const today = formatDateISO();
-  const completedToday = state.tasks.filter(t => t.completed && t.completionDate === today);
-  if (completedToday.length === 0) { alert('There are no completed tasks for today.'); return; }
-  if (!confirm(`Reset Day will DELETE ${completedToday.length} task(s) completed today. This cannot be undone. Proceed?`)) return;
-  state.tasks = state.tasks.filter(t => !(t.completed && t.completionDate === today));
-  saveData();
-  renderAll();
-}
-
-function clearAllTasks() {
-  if (state.tasks.length === 0) { alert('No tasks to clear.'); return; }
-  if (!confirm(`Clear All will permanently DELETE ALL (${state.tasks.length}) tasks. This cannot be undone. Proceed?`)) return;
-  state.tasks = [];
-  saveData();
-  renderAll();
-}
-
-/* =========================
-   Daily Reset Logic
-   (kept as-is — scheduled daily reset)
-   ========================= */
-
-function resetDailyIfNeeded() {
-  const today = formatDateISO();
-  if (state.meta.lastResetDate === today) return;
-  let changed = false;
-  state.tasks.forEach(task => {
-    if (task.dateCreated !== today) {
-      if (task.completed) changed = true;
-      task.completed = false; task.completionDate = null; task.dateCreated = today; changed = true;
-    }
-  });
-  state.timers.focusSessionsCompletedToday = 0;
-  state.meta.lastResetDate = today;
-  if (changed) saveData();
-  renderAll();
-  scheduleNextMidnightReset();
-}
-
-function scheduleNextMidnightReset() {
-  const now = new Date(); const nextMidnight = new Date(now);
-  nextMidnight.setHours(24, 0, 5, 0);
-  const ms = nextMidnight - now;
-  if (ms <= 0 || !isFinite(ms)) setTimeout(resetDailyIfNeeded, 60 * 1000);
-  else setTimeout(resetDailyIfNeeded, ms);
-}
-
-/* =========================
-   Progress Tracker
-   ========================= */
-
-function computeProgress() {
-  const today = formatDateISO();
-  const todaysTasks = state.tasks.filter(t => t.dateCreated === today);
-  const total = todaysTasks.length;
-  const completed = todaysTasks.filter(t => t.completed).length;
-  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-  return { total, completed, percent };
-}
-
-let progressAnimationFrame = null; let progressLastRendered = 0;
-function animateProgress(toPercent) {
-  const bar = el('#progressBarFill'); const label = el('#progressLabel'); if (!bar) return;
-  cancelAnimationFrame(progressAnimationFrame);
-  const from = progressLastRendered || 0; const start = performance.now(); const duration = 600;
-  function tick(now) {
-    const t = Math.min(1, (now - start) / duration); const eased = t * (2 - t); const current = Math.round(from + (toPercent - from) * eased);
-    bar.style.width = current + '%'; if (label) label.textContent = `${current}%`;
-    if (t < 1) progressAnimationFrame = requestAnimationFrame(tick); else progressLastRendered = toPercent;
+  // All completed (include other completed tasks)
+  if (allCompleted.length > completedToday.length) {
+    wrap.appendChild(createEl('h4', { text: `All Completed (${allCompleted.length})` }));
+    const allList = createEl('ul', { className: 'task-list', attrs: { role: 'list' } });
+    allCompleted.forEach(task => {
+      const li = createEl('li', { className: 'task-item completed', attrs: { 'data-id': task.id } });
+      li.appendChild(createEl('span', { text: `${task.text} — ${task.category || 'Misc'}`, className: 'task-text' }));
+      const meta = createEl('div', { className: 'task-meta' });
+      meta.appendChild(createEl('small', { text: `Completed: ${task.completionDate || '—'}` }));
+      li.appendChild(meta);
+      allList.appendChild(li);
+    });
+    wrap.appendChild(allList);
   }
-  progressAnimationFrame = requestAnimationFrame(tick);
+
+  // Brain dump display included in evening review
+  const brain = state.brainDump && state.brainDump.trim();
+  const brainWrap = createEl('div', { className: 'evening-brain-dump' });
+  brainWrap.appendChild(createEl('h4', { text: 'Brain Dump' }));
+  brainWrap.appendChild(createEl('div', { html: brain ? `<p>${escapeHtml(brain).replace(/\n/g,'<br/>')}</p>` : '<em>No brain dump notes.</em>' }));
+  wrap.appendChild(brainWrap);
 }
 
-function renderProgress() {
-  const { total, completed, percent } = computeProgress();
-  const countEl = el('#progressCount'); if (countEl) countEl.textContent = `${completed}/${total} tasks complete`;
-  animateProgress(percent);
+// Brain dump helpers
+function saveBrainDump(text) {
+  state.brainDump = text || '';
+  saveData();
+  renderEveningReview();
+}
+function loadBrainDump() {
+  return state.brainDump || '';
 }
 
-/* Lightweight no-ops for removed features */
-function evaluateAchievements() { /* removed: tasks-only view */ }
-function evaluateStreaks() { /* removed: tasks-only view */ }
+// simple html escaper used above
+function escapeHtml(unsafe) {
+  return (unsafe || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
-function renderAll() { renderTasks(); renderProgress(); renderEveningReview(); }
-
+@@
 function initEventBindings() {
-  const addForm = el('#globalAddTaskForm');
-  if (addForm) {
-    const categorySelect = addForm.querySelector('#globalCategory');
-    const textInput = addForm.querySelector('#globalTaskText');
-    const submitBtn = addForm.querySelector('#globalAddBtn');
-    if (submitBtn && textInput && categorySelect) {
-      submitBtn.addEventListener('click', () => {
-        const cat = categorySelect.value; const txt = textInput.value.trim(); if (txt) { addTask(cat, txt); textInput.value = ''; }
-      });
-    }
-  }
-
+@@
   const resetBtn = el('#resetDayBtn'); if (resetBtn) resetBtn.addEventListener('click', deleteCompletedToday);
   const clearBtn = el('#clearAllBtn'); if (clearBtn) clearBtn.addEventListener('click', clearAllTasks);
 
-  document.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const active = document.activeElement; if (active && active.tagName === 'BUTTON') active.click(); } });
-}
+  // Brain dump save/clear wiring
+  const saveBD = el('#saveBrainDumpBtn'), clearBD = el('#clearBrainDumpBtn'), brainInput = el('#brainDumpInput');
+  if (brainInput) brainInput.value = loadBrainDump();
+  if (saveBD && brainInput) saveBD.addEventListener('click', () => { saveBrainDump(brainInput.value); saveBD.textContent = 'Saved'; setTimeout(()=>saveBD.textContent='Save Brain Dump',900); });
+  if (clearBD && brainInput) clearBD.addEventListener('click', () => { brainInput.value = ''; saveBrainDump(''); });
 
-function initDarkModeToggle() {
-  try {
-    const toggle = el('#darkModeToggle');
-    if (!toggle) return;
-    toggle.checked = !!(state.settings && state.settings.darkMode);
-    document.body.classList.toggle('dark-mode', toggle.checked);
-    toggle.addEventListener('change', (e) => {
-      state.settings = state.settings || {};
-      state.settings.darkMode = e.target.checked;
-      document.body.classList.toggle('dark-mode', e.target.checked);
-      saveData();
-    });
-  } catch (e) { /* ignore */ }
-}
-
+  // Export PDF button
+  const exportBtn = el('#exportEveningBtn');
+  if (exportBtn) exportBtn.addEventListener('click', () => exportEveningReviewPdf());
+ }
+@@
 function safeInit() {
   resetDailyIfNeeded();
   renderAll();
@@ -399,6 +342,33 @@ function safeInit() {
   scheduleNextMidnightReset();
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeInit); else safeInit();
+// PDF export: exports brain dump + evening review (uses html2pdf if available, else falls back to print)
+function exportEveningReviewPdf() {
+  const brain = el('#brainDumpCard') ? el('#brainDumpCard').cloneNode(true) : null;
+  const evening = el('#eveningReviewCard') ? el('#eveningReviewCard').cloneNode(true) : null;
+  if (!evening) { alert('Evening Review not found to export.'); return; }
 
-window.DailyChecklistHub = { state, addTask, editTask, deleteTask, toggleTaskCompletion, computeProgress, renderAll, deleteCompletedToday, clearAllTasks };
+  const container = document.createElement('div');
+  container.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial';
+  if (brain) container.appendChild(brain);
+  container.appendChild(evening);
+
+  if (typeof html2pdf !== 'undefined') {
+    const opt = {
+      margin: 0.4,
+      filename: `Evening-Review-${formatDateISO()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(container).save().catch(e => { console.error(e); alert('PDF export failed'); });
+  } else {
+    // fallback: open print dialog with cloned contents
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>Evening Review</title></head><body>');
+    w.document.body.appendChild(container);
+    w.document.write('</body></html>');
+    w.document.close();
+    w.print();
+  }
+}
