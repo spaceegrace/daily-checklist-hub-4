@@ -316,9 +316,19 @@ function escapeHtml(unsafe) {
   return (unsafe || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-@@
 function initEventBindings() {
-@@
+  const addForm = el('#globalAddTaskForm');
+  if (addForm) {
+    const categorySelect = addForm.querySelector('#globalCategory');
+    const textInput = addForm.querySelector('#globalTaskText');
+    const submitBtn = addForm.querySelector('#globalAddBtn');
+    if (submitBtn && textInput && categorySelect) {
+      submitBtn.addEventListener('click', () => {
+        const cat = categorySelect.value; const txt = textInput.value.trim(); if (txt) { addTask(cat, txt); textInput.value = ''; }
+      });
+    }
+  }
+
   const resetBtn = el('#resetDayBtn'); if (resetBtn) resetBtn.addEventListener('click', deleteCompletedToday);
   const clearBtn = el('#clearAllBtn'); if (clearBtn) clearBtn.addEventListener('click', clearAllTasks);
 
@@ -331,8 +341,10 @@ function initEventBindings() {
   // Export PDF button
   const exportBtn = el('#exportEveningBtn');
   if (exportBtn) exportBtn.addEventListener('click', () => exportEveningReviewPdf());
- }
-@@
+
+  document.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const active = document.activeElement; if (active && active.tagName === 'BUTTON') active.click(); } });
+}
+
 function safeInit() {
   resetDailyIfNeeded();
   renderAll();
