@@ -68,7 +68,10 @@ function createEl(tag, options = {}) {
   if (options.text) e.textContent = options.text;
   if (options.html) e.innerHTML = options.html;
   if (options.className) e.className = options.className;
-  if (options.attrs) Object.keys(options.attrs).forEach(k => e.setAttribute(k, options.attrs[k]));
+  // normalize attrs and ensure buttons are non-submit by default
+  const attrs = Object.assign({}, options.attrs || {});
+  if (tag === 'button' && !('type' in attrs)) attrs.type = 'button';
+  Object.keys(attrs).forEach(k => e.setAttribute(k, attrs[k]));
   if (options.props) Object.assign(e, options.props);
   return e;
 }
@@ -329,6 +332,18 @@ function initEventBindings() {
     }
   }
 
+  // small helper to prevent form submit jumps if the user presses Enter in the top input
+  const globalFormText = el('#globalTaskText');
+  if (globalFormText) {
+    globalFormText.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const btn = el('#globalAddBtn');
+        if (btn) btn.click();
+      }
+    });
+  }
+
   const resetBtn = el('#resetDayBtn'); if (resetBtn) resetBtn.addEventListener('click', deleteCompletedToday);
   const clearBtn = el('#clearAllBtn'); if (clearBtn) clearBtn.addEventListener('click', clearAllTasks);
 
@@ -343,6 +358,21 @@ function initEventBindings() {
   if (exportBtn) exportBtn.addEventListener('click', () => exportEveningReviewPdf());
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const active = document.activeElement; if (active && active.tagName === 'BUTTON') active.click(); } });
+}
+
+function initDarkModeToggle() {
+  try {
+    const toggle = el('#darkModeToggle');
+    if (!toggle) return;
+    toggle.checked = !!(state.settings && state.settings.darkMode);
+    document.body.classList.toggle('dark-mode', toggle.checked);
+    toggle.addEventListener('change', (e) => {
+      state.settings = state.settings || {};
+      state.settings.darkMode = e.target.checked;
+      document.body.classList.toggle('dark-mode', e.target.checked);
+      saveData();
+    });
+  } catch (e) { /* ignore */ }
 }
 
 function safeInit() {
