@@ -375,6 +375,75 @@ function initDarkModeToggle() {
   } catch (e) { /* ignore */ }
 }
 
+/* --- BEGIN: minimal missing helpers (added to enable button bindings) --- */
+
+// Compute progress for today (used by UI or external callers)
+function computeProgress() {
+  const today = formatDateISO();
+  const todaysTasks = state.tasks.filter(t => t.dateCreated === today);
+  const total = todaysTasks.length;
+  if (total === 0) return 0;
+  const completedCount = todaysTasks.filter(t => t.completed).length;
+  return Math.round((completedCount / total) * 100);
+}
+
+// Renders all UI pieces that exist in this file
+function renderAll() {
+  try {
+    renderTasks();
+  } catch (e) { console.warn('renderTasks failed', e); }
+  try {
+    renderEveningReview();
+  } catch (e) { console.warn('renderEveningReview failed', e); }
+}
+
+// Remove completed tasks that were completed today
+function deleteCompletedToday() {
+  if (!confirm('Delete completed tasks from today?')) return;
+  const today = formatDateISO();
+  state.tasks = state.tasks.filter(t => !(t.completed && t.completionDate === today));
+  saveData();
+  renderAll();
+}
+
+// Clear all tasks (confirmed)
+function clearAllTasks() {
+  if (!confirm('Clear ALL tasks? This cannot be undone.')) return;
+  state.tasks = [];
+  saveData();
+  renderAll();
+}
+
+// Reset daily counters if lastResetDate is before today.
+// This is a minimal/no-op-preserving reset: updates meta.lastResetDate and resets daily timers.
+function resetDailyIfNeeded() {
+  const today = formatDateISO();
+  state.meta = state.meta || {};
+  if (state.meta.lastResetDate === today) return;
+  // Example daily resets:
+  state.timers = state.timers || {};
+  state.timers.focusSessionsCompletedToday = 0;
+  state.meta.lastResetDate = today;
+  saveData();
+}
+
+// Schedule a timer to run resetDailyIfNeeded at next midnight
+function scheduleNextMidnightReset() {
+  try {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const ms = next.getTime() - now.getTime();
+    setTimeout(() => {
+      resetDailyIfNeeded();
+      renderAll();
+      // re-schedule for the following midnight
+      scheduleNextMidnightReset();
+    }, ms + 1000); // add 1s tolerance
+  } catch (e) { console.warn('scheduleNextMidnightReset failed', e); }
+}
+
+/* --- END: minimal missing helpers --- */
+
 function safeInit() {
   resetDailyIfNeeded();
   renderAll();
