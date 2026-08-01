@@ -1087,4 +1087,3 @@ window.DailyChecklistHub = {
    Elements not present will be skipped gracefully.
    =========================
  */
-```
