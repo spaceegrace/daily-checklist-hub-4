@@ -288,7 +288,12 @@ function animateProgress(toPercent) {
   progressAnimationFrame = requestAnimationFrame(tick);
 }
 
-function renderProgress() { const { total, completed, percent } = computeProgress(); const countEl = el('#progressCount'); if (countEl) countEl.textContent = `${completed}/${total} tasks complete`; animateProgress(percent); }
+function renderProgress() {
+  const { total, completed, percent } = computeProgress();
+  const countEl = el('#progressCount');
+  if (countEl) countEl.textContent = `${completed}/${total} tasks complete`;
+  animateProgress(percent);
+}
 
 /* Lightweight no-ops for removed features */
 function evaluateAchievements() { /* removed: tasks-only view */ }
