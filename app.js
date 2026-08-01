@@ -454,34 +454,160 @@ function safeInit() {
 }
 
 // PDF export: exports brain dump + evening review (uses html2pdf if available, else falls back to print)
+// PDF export: creates a text-based daily summary PDF
 function exportEveningReviewPdf() {
-  const brain = el('#brainDumpCard') ? el('#brainDumpCard').cloneNode(true) : null;
-  const evening = el('#eveningReviewCard') ? el('#eveningReviewCard').cloneNode(true) : null;
-  if (!evening) { alert('Evening Review not found to export.'); return; }
 
-  const container = document.createElement('div');
-  container.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial';
-  if (brain) container.appendChild(brain);
-  container.appendChild(evening);
-
-  if (typeof html2pdf !== 'undefined') {
-    const opt = {
-      margin: 0.4,
-      filename: `Evening-Review-${formatDateISO()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(container).save().catch(e => { console.error(e); alert('PDF export failed'); });
-  } else {
-    // fallback: open print dialog with cloned contents
-    const w = window.open('', '_blank');
-    w.document.write('<html><head><title>Evening Review</title></head><body>');
-    w.document.body.appendChild(container);
-    w.document.write('</body></html>');
-    w.document.close();
-    w.print();
+  if (!window.jspdf) {
+    alert("PDF library not loaded.");
+    return;
   }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const today = formatDateISO();
+
+  let y = 20;
+
+  function addLine(text, size = 11) {
+    doc.setFontSize(size);
+
+    // Wrap long text automatically
+    const lines = doc.splitTextToSize(text, 170);
+
+    lines.forEach(line => {
+      if (y > 275) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.text(line, 20, y);
+      y += 7;
+    });
+  }
+
+
+  // ======================
+  // HEADER
+  // ======================
+
+  addLine("🐸 Daily Checklist Hub Summary", 18);
+  addLine(`Date: ${today}`);
+  y += 5;
+
+
+  // ======================
+  // TASK SUMMARY
+  // ======================
+
+  addLine("Daily Progress", 14);
+
+  const todaysTasks = state.tasks.filter(
+    task => task.dateCreated === today
+  );
+
+  const completedToday = todaysTasks.filter(
+    task => task.completed
+  );
+
+
+  const percent =
+    todaysTasks.length === 0
+      ? 0
+      : Math.round(
+          (completedToday.length / todaysTasks.length) * 100
+        );
+
+
+  addLine(
+    `Tasks Completed: ${completedToday.length}/${todaysTasks.length}`
+  );
+
+  addLine(
+    `Completion Rate: ${percent}%`
+  );
+
+  addLine(
+    `Total Tasks Ever Completed: ${state.stats.totalTasksEverCompleted || 0}`
+  );
+
+
+  y += 5;
+
+
+  // ======================
+  // TASK BREAKDOWN
+  // ======================
+
+  addLine("Task Breakdown", 14);
+
+
+  CATEGORIES.forEach(category => {
+
+    const categoryTasks = todaysTasks.filter(
+      task => task.category === category
+    );
+
+    if(categoryTasks.length === 0) return;
+
+
+    addLine(category, 12);
+
+
+    categoryTasks.forEach(task => {
+
+      const symbol = task.completed ? "✓" : "○";
+
+      addLine(
+        `${symbol} ${task.text}`
+      );
+
+    });
+
+    y += 3;
+
+  });
+
+
+  // ======================
+  // BRAIN DUMP
+  // ======================
+
+  addLine("Brain Dump", 14);
+
+
+  if(state.brainDump && state.brainDump.trim()) {
+
+    addLine(state.brainDump);
+
+  } else {
+
+    addLine("No brain dump notes recorded.");
+
+  }
+
+
+  y += 5;
+
+
+  // ======================
+  // FOCUS TIMER
+  // ======================
+
+  addLine("Focus Sessions", 14);
+
+  addLine(
+    `Completed Today: ${
+      state.timers.focusSessionsCompletedToday || 0
+    }`
+  );
+
+
+  // Save PDF
+
+  doc.save(
+    `Daily-Checklist-Summary-${today}.pdf`
+  );
 }
 
    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeInit); else safeInit();
