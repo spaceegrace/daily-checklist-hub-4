@@ -18,9 +18,9 @@
           <input id="darkModeToggle" type="checkbox" />
           <span>Dark</span>
         </label>
-        <div class="card" style="padding:8px 10px;">
+        <div class="card compact">
           <div id="progressCount">0/0 tasks complete</div>
-          <div id="progressWrap" style="width:220px;">
+          <div id="progressWrap">
             <div class="progress-bar"><div id="progressBarFill"></div></div>
             <div id="progressLabel">0%</div>
           </div>
@@ -29,8 +29,8 @@
     </header>
 
     <!-- Global add form -->
-    <div id="globalAddTaskForm" class="card" style="margin-bottom:12px;">
-      <div style="display:flex; gap:8px; align-items:center;">
+    <div id="globalAddTaskForm" class="card">
+      <div class="form-inline">
         <select id="globalCategory" class="small-input">
           <option>Morning Routine</option>
           <option>Top 3 Priorities</option>
@@ -61,7 +61,7 @@
 
         <section class="card">
           <h3>Brain Dump</h3>
-          <textarea id="brainDumpTextarea" rows="6" style="width:100%; padding:8px; border-radius:6px; border:1px solid #e5e7eb;"></textarea>
+          <textarea id="brainDumpTextarea" rows="6" class="textarea"></textarea>
           <div class="controls">
             <button id="brainDumpSave" class="btn">Save Notes</button>
             <button id="brainDumpClear" class="btn tiny">Clear</button>
@@ -72,19 +72,19 @@
       <aside class="right">
         <div class="card">
           <h3>Activation (5 min)</h3>
-          <div style="font-size:1.1rem; font-weight:600;" id="activationTimerDisplay">05:00</div>
+          <div id="activationTimerDisplay" class="timer-display">05:00</div>
           <div class="controls">
             <button id="activationStart" class="btn small">Start</button>
             <button id="activationPause" class="btn small">Pause</button>
             <button id="activationReset" class="btn small">Reset</button>
           </div>
-          <div id="activationMessage" class="muted" style="margin-top:8px;"></div>
+          <div id="activationMessage" class="muted mt-8"></div>
         </div>
 
         <div class="card">
           <h3>Focus Timer</h3>
-          <div id="focusModeLabel" style="font-weight:600; margin-bottom:6px;">Focus</div>
-          <div id="focusTimerDisplay" style="font-size:1.1rem; font-weight:600;">45:00</div>
+          <div id="focusModeLabel" class="section-label">Focus</div>
+          <div id="focusTimerDisplay" class="timer-display">45:00</div>
           <div class="controls">
             <button id="focusStart" class="btn small">Start</button>
             <button id="focusPause" class="btn small">Pause</button>
@@ -99,16 +99,16 @@
 
         <div class="card">
           <h3>Health</h3>
-          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <div class="health-row">
             <div>Water: <strong id="waterCount">0</strong></div>
             <button id="waterAdd" class="btn tiny">+1</button>
             <button id="waterReset" class="btn tiny">Reset</button>
           </div>
-          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <div class="health-row">
             <label><input id="exerciseChk" type="checkbox" /> Exercise</label>
             <label><input id="medsChk" type="checkbox" /> Medication</label>
           </div>
-          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <div class="health-row">
             <input id="bloodSugarInput" class="small-input" placeholder="Blood sugar" />
             <button id="saveHealthBtn" class="btn tiny">Save</button>
           </div>
@@ -137,6 +137,14 @@
           const btn = document.getElementById('globalAddBtn');
           if (btn) btn.click();
         }
+      });
+    }
+
+    // Ensure dark mode toggle applies the .dark-mode class to <body>
+    const darkToggle = document.getElementById('darkModeToggle');
+    if (darkToggle) {
+      darkToggle.addEventListener('change', (e) => {
+        document.body.classList.toggle('dark-mode', e.target.checked);
       });
     }
   </script>
