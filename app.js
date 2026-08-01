@@ -463,151 +463,144 @@ function exportEveningReviewPdf() {
   }
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  // A4 portrait provides a bit more room than the default
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 18; // comfortable margin
+  const maxWidth = pageWidth - margin * 2;
+  const lineHeight = 7; // mm
 
   const today = formatDateISO();
 
-  let y = 20;
+  let y = margin;
 
-  function addLine(text, size = 11) {
-    doc.setFontSize(size);
-
-    // Wrap long text automatically
-    const lines = doc.splitTextToSize(text, 170);
-
-    lines.forEach(line => {
-      if (y > 275) {
-        doc.addPage();
-        y = 20;
-      }
-
-      doc.text(line, 20, y);
-      y += 7;
-    });
+  function ensureSpace(linesCount = 1) {
+    if (y + linesCount * lineHeight > pageHeight - margin - 12) {
+      doc.addPage();
+      y = margin;
+      renderHeaderFooterStub();
+    }
   }
 
+  function renderHeaderFooterStub() {
+    // small header line to separate pages
+    doc.setDrawColor(220);
+    doc.setLineWidth(0.3);
+    doc.line(margin, margin - 4, pageWidth - margin, margin - 4);
+  }
+
+  function addWrappedText(text, opts = {}) {
+    const size = opts.size || 11;
+    const style = opts.style || 'normal';
+    const color = opts.color || [0, 0, 0];
+    doc.setFont('helvetica', style === 'bold' ? 'bold' : 'normal');
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text, maxWidth);
+    lines.forEach(line => {
+      ensureSpace(1);
+      doc.text(line, margin, y);
+      y += lineHeight;
+    });
+  }
 
   // ======================
   // HEADER
   // ======================
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('Daily Checklist Hub Summary', pageWidth / 2, y, { align: 'center' });
+  y += 9;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date: ${today}`, margin, y);
+  y += 8;
 
-  addLine("🐸 Daily Checklist Hub Summary", 18);
-  addLine(`Date: ${today}`);
-  y += 5;
-
+  // thin rule
+  doc.setDrawColor(200);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y - 3, pageWidth - margin, y - 3);
+  y += 2;
 
   // ======================
   // TASK SUMMARY
   // ======================
+  const todaysTasks = state.tasks.filter(task => task.dateCreated === today);
+  const completedToday = todaysTasks.filter(task => task.completed);
+  const percent = todaysTasks.length === 0 ? 0 : Math.round((completedToday.length / todaysTasks.length) * 100);
 
-  addLine("Daily Progress", 14);
-
-  const todaysTasks = state.tasks.filter(
-    task => task.dateCreated === today
-  );
-
-  const completedToday = todaysTasks.filter(
-    task => task.completed
-  );
-
-
-  const percent =
-    todaysTasks.length === 0
-      ? 0
-      : Math.round(
-          (completedToday.length / todaysTasks.length) * 100
-        );
-
-
-  addLine(
-    `Tasks Completed: ${completedToday.length}/${todaysTasks.length}`
-  );
-
-  addLine(
-    `Completion Rate: ${percent}%`
-  );
-
-  addLine(
-    `Total Tasks Ever Completed: ${state.stats.totalTasksEverCompleted || 0}`
-  );
-
-
-  y += 5;
-
+  addWrappedText('Daily Progress', { size: 14, style: 'bold' });
+  addWrappedText(`Tasks Completed: ${completedToday.length}/${todaysTasks.length}`);
+  addWrappedText(`Completion Rate: ${percent}%`);
+  addWrappedText(`Total Tasks Ever Completed: ${state.stats.totalTasksEverCompleted || 0}`);
+  y += 3;
 
   // ======================
   // TASK BREAKDOWN
   // ======================
-
-  addLine("Task Breakdown", 14);
-
+  addWrappedText('Task Breakdown', { size: 14, style: 'bold' });
 
   CATEGORIES.forEach(category => {
+    const categoryTasks = todaysTasks.filter(task => task.category === category);
+    if (categoryTasks.length === 0) return;
 
-    const categoryTasks = todaysTasks.filter(
-      task => task.category === category
-    );
-
-    if(categoryTasks.length === 0) return;
-
-
-    addLine(category, 12);
-
+    addWrappedText(`${category} (${categoryTasks.length})`, { size: 12, style: 'bold' });
 
     categoryTasks.forEach(task => {
-
-      const symbol = task.completed ? "✓" : "○";
-
-      addLine(
-        `${symbol} ${task.text}`
-      );
-
+      const symbol = task.completed ? '✓' : '○';
+      // color completed items green for emphasis
+      const color = task.completed ? [16, 185, 129] : [34, 34, 34];
+      addWrappedText(`${symbol} ${task.text}`, { size: 11, color });
     });
 
-    y += 3;
-
+    y += 2;
   });
 
+  // If there were no tasks today, include a helpful note
+  if (todaysTasks.length === 0) {
+    addWrappedText('No tasks were created today.', { color: [120, 120, 120] });
+  }
+
+  y += 3;
 
   // ======================
   // BRAIN DUMP
   // ======================
+  addWrappedText('Brain Dump', { size: 14, style: 'bold' });
 
-  addLine("Brain Dump", 14);
-
-
-  if(state.brainDump && state.brainDump.trim()) {
-
-    addLine(state.brainDump);
-
+  if (state.brainDump && state.brainDump.trim()) {
+    // respect original line breaks
+    const safe = String(state.brainDump).trim();
+    const paragraphs = safe.split(/\n\n+/);
+    paragraphs.forEach(p => addWrappedText(p));
   } else {
-
-    addLine("No brain dump notes recorded.");
-
+    addWrappedText('No brain dump notes recorded.', { color: [120, 120, 120] });
   }
 
-
-  y += 5;
-
+  y += 3;
 
   // ======================
   // FOCUS TIMER
   // ======================
+  addWrappedText('Focus Sessions', { size: 14, style: 'bold' });
+  addWrappedText(`Completed Today: ${state.timers.focusSessionsCompletedToday || 0}`);
 
-  addLine("Focus Sessions", 14);
+  // ======================
+  // FOOTER / PAGE NUMBERS
+  // ======================
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    const pageStr = `Page ${i} of ${totalPages}`;
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(pageStr, pageWidth - margin, pageHeight - 10, { align: 'right' });
+  }
 
-  addLine(
-    `Completed Today: ${
-      state.timers.focusSessionsCompletedToday || 0
-    }`
-  );
-
-
-  // Save PDF
-
-  doc.save(
-    `Daily-Checklist-Summary-${today}.pdf`
-  );
+  // Save PDF with a clean filename
+  doc.save(`Daily-Checklist-Summary-${today}.pdf`);
 }
 
    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeInit); else safeInit();
